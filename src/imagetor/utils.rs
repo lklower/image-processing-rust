@@ -1,16 +1,16 @@
 use core::fmt;
-use image::{codecs::jpeg::JpegEncoder, DynamicImage, GenericImageView};
+use image::{codecs::jpeg::JpegEncoder, DynamicImage, ImageBuffer};
 use printpdf::{ColorBits, Image, ImageTransform, ImageXObject, Mm, PdfDocument, Px};
 use std::{
     fs::{self, File},
-    io::{self, BufWriter},
+    io::BufWriter,
     path::{Path, PathBuf},
 };
 
 use crate::imagetor::to_image_buffer;
 
 #[derive(Debug)]
-pub enum ImageFinderError {
+pub(crate) enum ImageFinderError {
     IOError(std::io::Error),
 }
 
@@ -36,7 +36,7 @@ impl std::error::Error for ImageFinderError {
     }
 }
 
-pub struct ImageFinder {
+pub(crate) struct ImageFinder {
     paths: PathBuf,
     paths_buff: Vec<PathBuf>,
 }
@@ -142,7 +142,11 @@ impl Utils {
         return (value / 25.4 * 300.0) as u32;
     }
 
-    pub fn generate_pdf(&self, filename: &String) -> Result<(), UtilsError> {
+    pub fn generate_pdf(
+        &self,
+        filename: &String,
+        img_buff: ImageBuffer<image::Rgba<u8>, Vec<u8>>,
+    ) -> Result<(), UtilsError> {
         let (pdf_width, pdf_height) = (Mm(210.0), Mm(297.0));
         let (pdf_width_pixel, pdf_height_pixel) =
             (self.to_px(pdf_width.0), self.to_px(pdf_height.0));
@@ -151,17 +155,9 @@ impl Utils {
             PdfDocument::new(filename, pdf_width, pdf_height, "Vera Smith Design");
         let current_layer = doc.get_page(page).get_layer(layer);
 
-        let image_file = File::open(filename)?;
-        let reader = io::BufReader::new(image_file);
+        let (w, h) = img_buff.dimensions();
 
-        let image_reader = image::io::Reader::new(reader).with_guessed_format();
-        let reader = image_reader?;
-        let img = reader.decode()?;
-        let (w, h) = img.dimensions();
-
-        let img = img.to_rgb8();
-        let mut image_bytes = Vec::new();
-        image_bytes.extend_from_slice(img.as_raw());
+        let image_bytes = DynamicImage::from(img_buff).to_rgb8().to_vec();
 
         let image = ImageXObject {
             width: Px(w as usize),
@@ -201,7 +197,7 @@ impl Utils {
             },
         );
 
-        let pdffile = File::create(filename.replace(".jpg", ".pdf"))?;
+        let pdffile = File::create(filename)?;
         let mut writer = BufWriter::new(pdffile);
 
         if let Err(e) = doc.save(&mut writer) {

@@ -7,8 +7,8 @@ use std::{
 };
 
 mod imagetor;
-use imagetor::utils::Utils;
 use imagetor::{addwatermark, fit_center, to_tensor, utils::ImageFinder};
+use imagetor::{to_image_buffer, utils::Utils};
 
 fn main() {
     let start_time: Instant = Instant::now();
@@ -72,20 +72,23 @@ fn main() {
         let new_filename = &format!("output-{}", filename).replace(" ", "-");
         if let Ok(_ok) = Utils.save_image(tensor1.clone(), new_filename) {
             println!("{} saved successfully!", new_filename);
+            println!("Start to converting image to PDF ...");
+            let new_filename = new_filename.replace(".jpg", ".pdf");
+            if let Ok(()) = Utils.generate_pdf(&new_filename, to_image_buffer(tensor1)) {
+                println!("{} created successfully!", new_filename);
+            }
         } else {
             println!("Failed to save image: {}", new_filename);
         }
 
-        println!("Start to converting image to PDF ...");
-
-        if let Ok(()) = Utils.generate_pdf(new_filename) {
-            println!(
-                "{} created successfully!",
-                new_filename.replace(".jpg", ".pdf")
-            );
-        } else {
-            println!("Failed to convert image to PDF: {}", new_filename);
-        }
+        // if let Ok(()) = Utils.generate_pdf(new_filename) {
+        //     println!(
+        //         "{} created successfully!",
+        //         new_filename.replace(".jpg", ".pdf")
+        //     );
+        // } else {
+        //     println!("Failed to convert image to PDF: {}", new_filename);
+        // }
     }
 
     println!("All images processed successfully!");
