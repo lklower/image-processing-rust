@@ -53,7 +53,11 @@ impl ImageFinder {
         for entry in fs::read_dir(self.paths.clone())? {
             let entry = entry?;
             let path = entry.path();
-            if path.is_file() {
+            if path.is_file()
+                && path
+                    .extension()
+                    .map_or(false, |ext| ext == "jpg" || ext == "png")
+            {
                 self.paths_buff.push(path);
             }
         }
