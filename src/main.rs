@@ -80,15 +80,6 @@ fn main() {
         } else {
             println!("Failed to save image: {}", new_filename);
         }
-
-        // if let Ok(()) = Utils.generate_pdf(new_filename) {
-        //     println!(
-        //         "{} created successfully!",
-        //         new_filename.replace(".jpg", ".pdf")
-        //     );
-        // } else {
-        //     println!("Failed to convert image to PDF: {}", new_filename);
-        // }
     }
 
     println!("All images processed successfully!");
